@@ -190,9 +190,12 @@ def send_sponsor_message(chat_id):
             buffered.seek(0)
 
         sponsor_caption = (
-            "🔹 پشتیبان : @Odinshopadmin (https://t.me/Odinshopadmin)\n"
-            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...): @OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
-            "🔹 کانال خدمات نرم افزاری ما : @OdinAccounts (https://t.me/OdinAccounts)"
+            "🔹 پشتیبان : @Odinshopadmin
+            (https://t.me/Odinshopadmin)\n"
+            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...): @OdinDigitalshop
+            (https://t.me/OdinDigitalshop)\n"
+            "🔹 کانال خدمات نرم افزاری ما : @OdinAccounts
+            (https://t.me/OdinAccounts)"
         )
 
         # Send the resized logo with the sponsor message
