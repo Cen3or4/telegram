@@ -1,0 +1,4 @@
+2024-10-13 01:55:05,188 - __main__ - INFO - Environment variables loaded successfully.
+2024-10-13 01:55:05,189 - __main__ - INFO - Bot is starting...
+2024-10-13 01:55:43,503 - TeleBot - ERROR - Infinity polling: polling exited
+2024-10-13 01:55:43,504 - TeleBot - ERROR - Break infinity polling
