@@ -49,6 +49,10 @@ user_request_times = defaultdict(list)
 RATE_LIMIT = int(os.getenv("RATE_LIMIT", 5))      # Maximum 5 requests
 TIME_WINDOW = int(os.getenv("TIME_WINDOW", 60))  # Within 60 seconds
 
+# Counter to track image requests per user
+user_image_count = defaultdict(int)
+SPONSOR_THRESHOLD = 4  # Send sponsor message after 4 image requests
+
 def is_rate_limited(user_id):
     """
     Check if the user has exceeded the rate limit.
@@ -128,8 +132,13 @@ def generate_image_from_text(message):
             # Send the generated image
             bot.send_photo(message.chat.id, image_bytes)
 
-            # Send sponsor message with logo and additional links
-            send_sponsor_message(message.chat.id)
+            # Increment the user's image request count
+            user_image_count[user_id] += 1
+
+            # Check if it's time to send the sponsor message
+            if user_image_count[user_id] >= SPONSOR_THRESHOLD:
+                send_sponsor_message(message.chat.id)
+                user_image_count[user_id] = 0  # Reset the counter
 
         else:
             raise ValueError("No image data received from the API.")
@@ -143,35 +152,32 @@ def generate_image_from_text(message):
 
 def send_sponsor_message(chat_id):
     """
-    Send sponsor information along with the logo image and promotional links in Farsi.
+    Send sponsor information along with the resized logo image and promotional links in Farsi.
     """
     try:
-        # Send sponsor logo
+        # Open and resize sponsor logo
         with open('logo.jpg', 'rb') as logo_file:
-            logo = logo_file.read()
+            logo = Image.open(logo_file)
+            logo.thumbnail((200, 200))  # Resize the logo to 200x200 pixels
+            buffered = io.BytesIO()
+            logo.save(buffered, format="JPEG")
+            buffered.seek(0)
 
         caption = (
-            "✨ این بات توسط **Odin Account** پشتیبانی می‌شود.\n\n"
-            "🔹 پشتیبان: [@Odinshopadmin](https://t.me/Odinshopadmin)\n"
-            "🔹 کانال فروش محصولات دیجیتال ما: [@OdinDigitalshop](https://t.me/OdinDigitalshop)\n"
-            "🔹 کانال اصلی ما: [@OdinAccounts](https://t.me/OdinAccounts)\n\n"
-            "📌 خدمات ما را در لینک‌های زیر مشاهده کنید:\n"
-            "1️⃣ **چرا بهترین خدمات “اینترنت بدون محدودیت” رو از ما دریافت می‌کنید و لیست تعرفه‌ها**\n"
-            "[لینک](https://t.me/OdinAccounts/3)\n\n"
-            "2️⃣ **کلیه نرم‌افزارهای لازم برای اتصال روی تمامی دستگاه‌ها**\n"
-            "[لینک](https://t.me/OdinAccounts/5)\n\n"
-            "3️⃣ **ثبت‌نام دوره‌های آموزشی در معتبرترین دانشگاه‌های دنیا در سایت Coursera**\n"
-            "[لینک](https://t.me/OdinAccounts/44)\n\n"
-            "4️⃣ **تلگرام پرمیوم و انواع گیفت‌کارت‌هایی که ما با کمترین قیمت برای شما خریداری می‌کنیم**\n"
-            "[لینک](https://t.me/OdinAccounts/35)\n\n"
-            "5️⃣ **خرید انواع شماره‌های مجازی معتبر از ما**\n"
-            "[لینک](https://t.me/OdinAccounts/37)\n\n"
-            "💠👩‍💻 [@OdinShopAdmin](https://t.me/OdinShopAdmin)"
+            "🔹 پشتیبان : \n"
+            "@Odinshopadmin (https://t.me/Odinshopadmin)\n"
+            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...) \n"
+            "@OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
+            "🔹 کانال خدمات نرم افزاری ما :\n"
+            "@OdinAccounts (https://t.me/OdinAccounts)\n\n"
+            "پشتیبان :\n"
+            "@Odinshopadmin"
         )
 
+        # Send the resized logo with the sponsor message
         bot.send_photo(
             chat_id,
-            logo,
+            buffered,
             caption=caption,
             parse_mode='Markdown'
         )
@@ -180,22 +186,14 @@ def send_sponsor_message(chat_id):
         logger.error("logo.jpg file not found.")
         # Send sponsor message without the logo
         caption = (
-            "✨ این بات توسط **Odin Account** پشتیبانی می‌شود.\n\n"
-            "🔹 پشتیبان: [@Odinshopadmin](https://t.me/Odinshopadmin)\n"
-            "🔹 کانال فروش محصولات دیجیتال ما: [@OdinDigitalshop](https://t.me/OdinDigitalshop)\n"
-            "🔹 کانال اصلی ما: [@OdinAccounts](https://t.me/OdinAccounts)\n\n"
-            "📌 خدمات ما را در لینک‌های زیر مشاهده کنید:\n"
-            "1️⃣ **چرا بهترین خدمات “اینترنت بدون محدودیت” رو از ما دریافت می‌کنید و لیست تعرفه‌ها**\n"
-            "[لینک](https://t.me/OdinAccounts/3)\n\n"
-            "2️⃣ **کلیه نرم‌افزارهای لازم برای اتصال روی تمامی دستگاه‌ها**\n"
-            "[لینک](https://t.me/OdinAccounts/5)\n\n"
-            "3️⃣ **ثبت‌نام دوره‌های آموزشی در معتبرترین دانشگاه‌های دنیا در سایت Coursera**\n"
-            "[لینک](https://t.me/OdinAccounts/44)\n\n"
-            "4️⃣ **تلگرام پرمیوم و انواع گیفت‌کارت‌هایی که ما با کمترین قیمت برای شما خریداری می‌کنیم**\n"
-            "[لینک](https://t.me/OdinAccounts/35)\n\n"
-            "5️⃣ **خرید انواع شماره‌های مجازی معتبر از ما**\n"
-            "[لینک](https://t.me/OdinAccounts/37)\n\n"
-            "💠👩‍💻 [@OdinShopAdmin](https://t.me/OdinShopAdmin)"
+            "🔹 پشتیبان : \n"
+            "@Odinshopadmin (https://t.me/Odinshopadmin)\n"
+            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...) \n"
+            "@OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
+            "🔹 کانال خدمات نرم افزاری ما :\n"
+            "@OdinAccounts (https://t.me/OdinAccounts)\n\n"
+            "پشتیبان :\n"
+            "@Odinshopadmin"
         )
         bot.send_message(
             chat_id,
