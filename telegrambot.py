@@ -25,9 +25,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Retrieve API keys from environment variables
+# Retrieve API keys and other configurations from environment variables
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+STARTUP_CHAT_ID = os.getenv("STARTUP_CHAT_ID")  # Chat ID to send the startup message
 
 if not TELEGRAM_TOKEN or not TOGETHER_API_KEY:
     logger.error("Environment variables TELEGRAM_TOKEN and TOGETHER_API_KEY must be set.")
@@ -67,6 +68,33 @@ def is_rate_limited(user_id):
         return True
     user_request_times[user_id].append(current_time)
     return False
+
+def send_startup_message():
+    """
+    Send a startup welcome message with rules to the specified chat.
+    """
+    if not STARTUP_CHAT_ID:
+        logger.warning("STARTUP_CHAT_ID is not set. Skipping startup message.")
+        return
+
+    startup_caption = (
+        "سلام! به بات تولید تصویر ما خوش آمدید.\n\n"
+        "📌 **قوانین استفاده از بات**:\n"
+        "1. هر پیام متنی شما به عنوان پرامپت برای تولید تصویر در نظر گرفته می‌شود.\n"
+        "2. لطفاً از ارسال پرامپت‌های نامناسب خودداری کنید.\n"
+        "3. شما می‌توانید تا 5 درخواست در هر 60 ثانیه ارسال کنید.\n\n"
+        "✨ از خدمات ما استفاده کنید و از تصاویر تولید شده لذت ببرید!"
+    )
+
+    try:
+        bot.send_message(
+            STARTUP_CHAT_ID,
+            startup_caption,
+            parse_mode='Markdown'
+        )
+        logger.info("Startup message sent successfully.")
+    except Exception as e:
+        logger.error(f"Failed to send startup message: {str(e)}")
 
 # Webhook route for Telegram bot
 @app.route('/webhook', methods=['POST'])
@@ -158,46 +186,62 @@ def send_sponsor_message(chat_id):
         # Open and resize sponsor logo
         with open('logo.jpg', 'rb') as logo_file:
             logo = Image.open(logo_file)
-            logo.thumbnail((200, 200))  # Resize the logo to 200x200 pixels
+            logo.thumbnail((100, 100))  # Resize the logo to 100x100 pixels
             buffered = io.BytesIO()
             logo.save(buffered, format="JPEG")
             buffered.seek(0)
 
-        caption = (
-            "🔹 پشتیبان : \n"
-            "@Odinshopadmin (https://t.me/Odinshopadmin)\n"
-            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...) \n"
-            "@OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
-            "🔹 کانال خدمات نرم افزاری ما :\n"
-            "@OdinAccounts (https://t.me/OdinAccounts)\n\n"
-            "پشتیبان :\n"
-            "@Odinshopadmin"
+        sponsor_caption = (
+            "✨ این بات توسط **Odin Account** پشتیبانی می‌شود.\n\n"
+            "🔹 پشتیبان : @Odinshopadmin (https://t.me/Odinshopadmin)\n"
+            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...): @OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
+            "🔹 کانال خدمات نرم افزاری ما : @OdinAccounts (https://t.me/OdinAccounts)\n\n"
+            "📌 خدمات ما را در لینک‌های زیر مشاهده کنید:\n"
+            "1️⃣ **چرا بهترین خدمات “اینترنت بدون محدودیت” رو از ما دریافت می‌کنید و لیست تعرفه‌ها**\n"
+            "[لینک](https://t.me/OdinAccounts/3)\n\n"
+            "2️⃣ **کلیه نرم‌افزارهای لازم برای اتصال روی تمامی دستگاه‌ها**\n"
+            "[لینک](https://t.me/OdinAccounts/5)\n\n"
+            "3️⃣ **ثبت‌نام دوره‌های آموزشی در معتبرترین دانشگاه‌های دنیا در سایت Coursera**\n"
+            "[لینک](https://t.me/OdinAccounts/44)\n\n"
+            "4️⃣ **تلگرام پرمیوم و انواع گیفت‌کارت‌هایی که ما با کمترین قیمت برای شما خریداری می‌کنیم**\n"
+            "[لینک](https://t.me/OdinAccounts/35)\n\n"
+            "5️⃣ **خرید انواع شماره‌های مجازی معتبر از ما**\n"
+            "[لینک](https://t.me/OdinAccounts/37)\n\n"
+            "💠👩‍💻 [@OdinShopAdmin](https://t.me/OdinShopAdmin)"
         )
 
         # Send the resized logo with the sponsor message
         bot.send_photo(
             chat_id,
             buffered,
-            caption=caption,
+            caption=sponsor_caption,
             parse_mode='Markdown'
         )
 
     except FileNotFoundError:
         logger.error("logo.jpg file not found.")
         # Send sponsor message without the logo
-        caption = (
-            "🔹 پشتیبان : \n"
-            "@Odinshopadmin (https://t.me/Odinshopadmin)\n"
-            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...) \n"
-            "@OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
-            "🔹 کانال خدمات نرم افزاری ما :\n"
-            "@OdinAccounts (https://t.me/OdinAccounts)\n\n"
-            "پشتیبان :\n"
-            "@Odinshopadmin"
+        sponsor_caption = (
+            "✨ این بات توسط **Odin Account** پشتیبانی می‌شود.\n\n"
+            "🔹 پشتیبان : @Odinshopadmin (https://t.me/Odinshopadmin)\n"
+            "🔹 کانال فروش محصولات دیجیتال ما (لپ تاپ ، پی سی ، ...): @OdinDigitalshop (https://t.me/OdinDigitalshop)\n"
+            "🔹 کانال خدمات نرم افزاری ما : @OdinAccounts (https://t.me/OdinAccounts)\n\n"
+            "📌 خدمات ما را در لینک‌های زیر مشاهده کنید:\n"
+            "1️⃣ **چرا بهترین خدمات “اینترنت بدون محدودیت” رو از ما دریافت می‌کنید و لیست تعرفه‌ها**\n"
+            "[لینک](https://t.me/OdinAccounts/3)\n\n"
+            "2️⃣ **کلیه نرم‌افزارهای لازم برای اتصال روی تمامی دستگاه‌ها**\n"
+            "[لینک](https://t.me/OdinAccounts/5)\n\n"
+            "3️⃣ **ثبت‌نام دوره‌های آموزشی در معتبرترین دانشگاه‌های دنیا در سایت Coursera**\n"
+            "[لینک](https://t.me/OdinAccounts/44)\n\n"
+            "4️⃣ **تلگرام پرمیوم و انواع گیفت‌کارت‌هایی که ما با کمترین قیمت برای شما خریداری می‌کنیم**\n"
+            "[لینک](https://t.me/OdinAccounts/35)\n\n"
+            "5️⃣ **خرید انواع شماره‌های مجازی معتبر از ما**\n"
+            "[لینک](https://t.me/OdinAccounts/37)\n\n"
+            "💠👩‍💻 [@OdinShopAdmin](https://t.me/OdinShopAdmin)"
         )
         bot.send_message(
             chat_id,
-            caption,
+            sponsor_caption,
             parse_mode='Markdown'
         )
     except Exception as e:
@@ -208,4 +252,9 @@ if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url="https://telegram-2vk6.onrender.com/webhook")  # Set your actual webhook URL here
     logger.info("🔗 Webhook set successfully.")
+
+    # Send the startup message
+    send_startup_message()
+
+    # Run the Flask app to listen for webhooks
     app.run(host="0.0.0.0", port=5000)
